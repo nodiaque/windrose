@@ -22,7 +22,9 @@ RUN mkdir $DATA_DIR && \
 	chown -R $USER $DATA_DIR && \
 	ulimit -n 2048
 
-ADD /serverdata/ $DATA_DIR
+#ADD /serverdata/ $DATA_DIR
+
+COPY --from=docker.io/windroseserver/windroseserver:latest --chown=windrose:windrose /home/ue_user/app $DATA_DIR
 
 ADD /scripts/ /opt/scripts/
 RUN chmod 777 /opt/scripts/
