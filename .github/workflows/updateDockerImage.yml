@@ -20,7 +20,7 @@ jobs:
       id: check
       run: |
         OFFICIAL_IMAGE="windroseserver/windroseserver"
-        MY_IMAGE="litmustester/windrose"
+        MY_IMAGE="nodiaque/windrose"
         TAG="latest"
 
         # Get the date when the official image was last updated
@@ -64,4 +64,4 @@ jobs:
         pull: true
         no-cache: true
         tags: |
-          litmustester/windrose:latest
+          nodiaque/windrose:latest
