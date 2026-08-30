@@ -15,24 +15,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v7
 
-    - name: Resolve latest version tag from Docker Hub
-      id: latest
-      run: |
-        OFFICIAL_IMAGE="windroseserver/windroseserver"
-        
-        RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
-
-        LATEST_DIGEST=$(echo "$RESPONSE" | jq -r '.results[] | select(.name=="latest") | .digest')
-        VERSION=$(echo "$RESPONSE" | jq -r --arg d "$LATEST_DIGEST" '.results[] | select(.digest==$d and .name!="latest") | .name' | head -n1)
-
-        echo "digest=$LATEST_DIGEST" >> "$GITHUB_OUTPUT"
-        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-    - name: Show resolved version
-      run: |
-        echo "Latest digest: ${{ steps.latest.outputs.digest }}"
-        echo "Latest version tag: ${{ steps.latest.outputs.version }}"
-      
+   
     # Check if the official image is newer than your own
     - name: Check for upstream updates
       id: check
@@ -60,7 +43,25 @@ jobs:
           echo "No new updates. Aborting."
           echo "needs_update=false" >> $GITHUB_OUTPUT
         fi
+        
+    - name: Resolve latest version tag from Docker Hub
+      id: latest
+      if: steps.check.outputs.needs_update == 'true'
+      run: |
+        OFFICIAL_IMAGE="windroseserver/windroseserver"
+        
+        RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
 
+        LATEST_DIGEST=$(echo "$RESPONSE" | jq -r '.results[] | select(.name=="latest") | .digest')
+        VERSION=$(echo "$RESPONSE" | jq -r --arg d "$LATEST_DIGEST" '.results[] | select(.digest==$d and .name!="latest") | .name' | head -n1)
+
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Show resolved version
+      run: |
+        echo "Latest digest: ${{ steps.latest.outputs.digest }}"
+        echo "Latest version tag: ${{ steps.latest.outputs.version }}"
+      
     - name: Set up Docker Buildx
       if: steps.check.outputs.needs_update == 'true'
       uses: docker/setup-buildx-action@v4
