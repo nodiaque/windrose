@@ -39,8 +39,11 @@ jobs:
     - name: Check for upstream updates
       id: check
       run: |
+        OFFICIAL_IMAGE="windroseserver/windroseserver"
+        MY_IMAGE="nodiaque/windrose"
+        TAG="latest"
+        VERSION="${{ steps.latest.outputs.version }}"
         
-
         # Get the date when the official image was last updated
         OFFICIAL_URL="https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/${TAG}"
         OFFICIAL_DATE=$(curl -s "$OFFICIAL_URL" | jq -r '.last_updated')
@@ -56,6 +59,7 @@ jobs:
         if [ "$MY_DATE" = "never" ] || [ "$(date -d "$OFFICIAL_DATE" +%s)" -gt "$(date -d "$MY_DATE" +%s)" ]; then
           echo "New update found! Starting build..."
           echo "needs_update=true" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         else
           echo "No new updates. Aborting."
           echo "needs_update=false" >> $GITHUB_OUTPUT
