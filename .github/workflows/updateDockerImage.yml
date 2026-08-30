@@ -39,28 +39,19 @@ jobs:
         if [ "$MY_DATE" = "never" ] || [ "$(date -d "$OFFICIAL_DATE" +%s)" -gt "$(date -d "$MY_DATE" +%s)" ]; then
           echo "New update found! Starting build..."
           echo "needs_update=true" >> $GITHUB_OUTPUT
+          
+          RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
+
+          LATEST_DIGEST=$(echo "$RESPONSE" | jq -r '.results[] | select(.name=="latest") | .digest')
+          VERSION=$(echo "$RESPONSE" | jq -r --arg d "$LATEST_DIGEST" '.results[] | select(.digest==$d and .name!="latest") | .name' | head -n1)
+
+          echo "Latest version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        
         else
           echo "No new updates. Aborting."
           echo "needs_update=false" >> $GITHUB_OUTPUT
         fi
-        
-    - name: Resolve latest version tag from Docker Hub
-      id: latest
-      if: steps.check.outputs.needs_update == 'true'
-      run: |
-        OFFICIAL_IMAGE="windroseserver/windroseserver"
-        
-        RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
-
-        LATEST_DIGEST=$(echo "$RESPONSE" | jq -r '.results[] | select(.name=="latest") | .digest')
-        VERSION=$(echo "$RESPONSE" | jq -r --arg d "$LATEST_DIGEST" '.results[] | select(.digest==$d and .name!="latest") | .name' | head -n1)
-
-        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-    - name: Show resolved version
-      run: |
-        echo "Latest digest: ${{ steps.latest.outputs.digest }}"
-        echo "Latest version tag: ${{ steps.latest.outputs.version }}"
       
     - name: Set up Docker Buildx
       if: steps.check.outputs.needs_update == 'true'
@@ -83,5 +74,5 @@ jobs:
         pull: true
         no-cache: true
         tags: |
-          nodiaque/windrose:${{ steps.latest.outputs.version }}
+          nodiaque/windrose:${{ steps.check.outputs.version }}
           nodiaque/windrose:latest
