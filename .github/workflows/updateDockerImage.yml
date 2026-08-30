@@ -15,13 +15,31 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v7
 
-    # Check if the official image is newer than your own
-    - name: Check for upstream updates
-      id: check
+    - name: Resolve latest version tag from Docker Hub
+      id: latest
       run: |
         OFFICIAL_IMAGE="windroseserver/windroseserver"
         MY_IMAGE="nodiaque/windrose"
         TAG="latest"
+        
+        RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
+
+        LATEST_DIGEST=$(echo "$RESPONSE" | jq -r '.results[] | select(.name=="latest") | .digest')
+        VERSION=$(echo "$RESPONSE" | jq -r --arg d "$LATEST_DIGEST" '.results[] | select(.digest==$d and .name!="latest") | .name' | head -n1)
+
+        echo "digest=$LATEST_DIGEST" >> "$GITHUB_OUTPUT"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Show resolved version
+      run: |
+        echo "Latest digest: ${{ steps.latest.outputs.digest }}"
+        echo "Latest version tag: ${{ steps.latest.outputs.version }}"
+      
+    # Check if the official image is newer than your own
+    - name: Check for upstream updates
+      id: check
+      run: |
+        
 
         # Get the date when the official image was last updated
         OFFICIAL_URL="https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/${TAG}"
