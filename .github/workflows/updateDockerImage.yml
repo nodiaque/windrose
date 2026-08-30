@@ -19,8 +19,6 @@ jobs:
       id: latest
       run: |
         OFFICIAL_IMAGE="windroseserver/windroseserver"
-        MY_IMAGE="nodiaque/windrose"
-        TAG="latest"
         
         RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
 
@@ -84,16 +82,5 @@ jobs:
         pull: true
         no-cache: true
         tags: |
-          nodiaque/windrose:${{ steps.latest.outputs.version }}
-          
-    - name: Build and push Docker image latest
-      if: steps.check.outputs.needs_update == 'true' 
-      uses: docker/build-push-action@v7
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        pull: true
-        no-cache: true
-        tags: |
           nodiaque/windrose:latest
+          nodiaque/windrose:${{ steps.latest.outputs.version }}
