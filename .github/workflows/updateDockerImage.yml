@@ -22,7 +22,7 @@ jobs:
       run: |
         OFFICIAL_IMAGE="windroseserver/windroseserver"
         MY_IMAGE="nodiaque/windrose"
-        TAG="latest"
+        TAG="latest-test"
         
         # Get the date when the official image was last updated
         OFFICIAL_URL="https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/${TAG}"
@@ -34,24 +34,30 @@ jobs:
         
         echo "Official image last updated: $OFFICIAL_DATE"
         echo "My image last updated: $MY_DATE"
-        
-        # If your image has never been built, or the official one is newer: Set 'needs_update' to true
-        if [ "$MY_DATE" = "never" ] || [ "$(date -d "$OFFICIAL_DATE" +%s)" -gt "$(date -d "$MY_DATE" +%s)" ]; then
-          echo "New update found! Starting build..."
-          echo "needs_update=true" >> $GITHUB_OUTPUT
-          
-          RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
 
-          LATEST_DIGEST=$(echo "$RESPONSE" | jq -r '.results[] | select(.name=="latest") | .digest')
-          VERSION=$(echo "$RESPONSE" | jq -r --arg d "$LATEST_DIGEST" '.results[] | select(.digest==$d and .name!="latest") | .name' | head -n1)
-
-          echo "Latest version: $VERSION"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-        
-        else
-          echo "No new updates. Aborting."
+        # If for unknown reason can't fetch original image, abort
+        if [ $OFFICIAL_DATE = null ]; then
+          echo "Source is null, aborting"
           echo "needs_update=false" >> $GITHUB_OUTPUT
+        else
+         # If your image has never been built, or the official one is newer: Set 'needs_update' to true
+          if [ "$MY_DATE" = "never" ] || [ "$(date -d "$OFFICIAL_DATE" +%s)" -gt "$(date -d "$MY_DATE" +%s)" ]; then
+            echo "New update found! Starting build..."
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+            
+            RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/?page_size=10")
+  
+            LATEST_DIGEST=$(echo "$RESPONSE" | jq -r '.results[] | select(.name=="latest") | .digest')
+            VERSION=$(echo "$RESPONSE" | jq -r --arg d "$LATEST_DIGEST" '.results[] | select(.digest==$d and .name!="latest") | .name' | head -n1)
+  
+            echo "Latest version: $VERSION"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new updates. Aborting."
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          fi
         fi
+       
       
     - name: Set up Docker Buildx
       if: steps.check.outputs.needs_update == 'true'
