@@ -22,7 +22,7 @@ jobs:
       run: |
         OFFICIAL_IMAGE="windroseserver/windroseserver"
         MY_IMAGE="nodiaque/windrose"
-        TAG="latest-test"
+        TAG="latest"
         
         # Get the date when the official image was last updated
         OFFICIAL_URL="https://hub.docker.com/v2/repositories/${OFFICIAL_IMAGE}/tags/${TAG}"
